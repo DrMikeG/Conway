@@ -1,0 +1,30 @@
+https://learn.adafruit.com/monochrome-oled-breakouts/wiring-128x64-oleds
+
+
+https://learn.adafruit.com/monochrome-oled-breakouts/arduino-library-and-examples
+
+
+Pin Description:
+ 
+1. GND: Power ground
+2. VDD: 2.8-5.5V power supply
+3. SCK: CLK clock
+4. SDA: MOSI data
+5. RES: Reset
+6. DC: data / command
+7. CS: chip-select signal
+ 
+ 
+ Very good display, easy to setup! 
+ For easy test just download latest u8g2 library, open 
+ Hello world example from u8g2 examples use this Constructor: 
+ 
+ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 8); ...and make connections (For Arduino Uno, Nano, Pro Mini...) 
+ 
+ VCC->VCC; 
+ GND->GND; 
+ CLK->13; 
+ MOSI->11; 
+ CS->10; 
+ DC->9; 
+ RST->8;
