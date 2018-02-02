@@ -233,10 +233,70 @@ void u8g2_bitmap_modes(uint8_t transparent) {
 
 uint8_t draw_state = 0;
 
+void drawFrameFullScreen()
+{
+  u8g2.drawRFrame(0,0,128,64, 1);  
+}
+
+void drawCheckerBoard()
+{
+  byte cmax = 126;
+  byte rmax = 62;
+  for (byte c=1; c <=cmax; c++)
+  {
+    for (byte r=1; r <=rmax; r++)
+    {
+      if (c % 2 == r % 2)
+      {      
+        u8g2.drawPixel(c,r);
+      }// end of if
+    }// end for r
+  }// end for c
+}
+
+void drawCorners()
+{
+  byte cmin = 1;
+  byte cmax = 126;
+  byte rmin = 1;
+  byte rmax = 62;
+  u8g2.drawPixel(cmin,rmin);
+  u8g2.drawPixel(cmin,rmax);
+  u8g2.drawPixel(cmax,rmin);
+  u8g2.drawPixel(cmax,rmax);
+}
+
+/*
+ * https://en.wikipedia.org/wiki/X_BitMap
+ * XBM image data consists of a line of pixel values stored in a static array. 
+ * Because a single bit represents each pixel (0 for white or 1 for black), each byte in the array contains the information for eight pixels, 
+ * with the upper left pixel in the bitmap represented by the low bit of the first byte in the array. 
+ * If the image width does not match a multiple of 8, the extra bits in the last byte of each row are ignored.
+ * 
+ * How many bytes are neede to represent a pixel width of 126 - 7 bytes (2^7)
+ * 7 * how many rows? 62 = 434 bytes
+ */
+
+static unsigned char u8g_logo_bits[] = {
+   0xff, 0xff, 0xff, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff, 0x3f, 0xe0, 0xe0,
+   0xff, 0x3f, 0xff, 0xff, 0xff, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff, 0x3f };
+
+void drawBitmap()
+{
+  byte u8g_logo_width = 10;
+  byte u8g_logo_height = 2;
+  u8g2.drawXBM( 1, 1, u8g_logo_width, u8g_logo_height, u8g_logo_bits);
+}
+
 void draw(void) {
   u8g2_prepare();
 
   u8g2.setDrawColor(1); // White
+  drawFrameFullScreen();
+  //drawCorners();
+  //drawCheckerBoard();
+  drawBitmap();
+  
   // x y radius
   u8g2.drawCircle(10,10,1); 
   u8g2.drawDisc(20,20,1); 
