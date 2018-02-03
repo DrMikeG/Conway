@@ -9,6 +9,14 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* 
 
 const int gameCols = 126; // Indexed from 0
 const int gameRows = 62; // Indexed from 0
+// 126 pixels per row = 16 bytes (16 * 8 = 128 bits)
+// 62 rows *  16 bytes = 992 bytes per game grid...
+const int bytesPerGameGrid = 16 * gameRows; 
+byte gameBoard00[bytesPerGameGrid];
+
+
+
+/** Drawing functions: ******************************/
 
 void u8g2_prepare(void) {
   //u8g2.setFont(u8g2_font_6x10_tf);
@@ -19,11 +27,11 @@ void u8g2_prepare(void) {
   u8g2.setFontDirection(0);
 }
 
+
 void drawFrameFullScreen()
 {
   u8g2.drawRFrame(0,0,128,64, 1);  
 }
-
 void intToChars(int i, char* charA, char* charB)
 {
   char tens = (char)((i / 10)+48);
@@ -34,17 +42,16 @@ void intToChars(int i, char* charA, char* charB)
 
 void drawDataTime(int hrI, int minI, int dayI, int mntI, int yrI)
 {
-  //                   0   1   2   3   4   5   6   7   8   9  10  11  12  13
+  u8g2.setDrawColor(0); // Black
+  u8g2.drawBox(70,1,57,7);  
+  u8g2.setDrawColor(1); // White
   char timeStr[15] = {'1','5',':','5','3',' ','0','3','/','0','2','/','1','8',0};
-  
   intToChars(hrI,&timeStr[0],&timeStr[1]); // HR
   intToChars(minI,&timeStr[3],&timeStr[4]); // HR
   intToChars(dayI,&timeStr[6],&timeStr[7]); // Day
   intToChars(mntI,&timeStr[9],&timeStr[10]); // Mnt
-  intToChars(yrI, &timeStr[12],&timeStr[13]); // Mnt
-  
+  intToChars(yrI, &timeStr[12],&timeStr[13]); // Mnt  
   u8g2.drawStr(71,1,timeStr);
-  //u8g2.drawStr(71,1,"15:53 03/02/18");
 }
 
 void drawCheckerBoard()
@@ -63,23 +70,62 @@ void drawCheckerBoard()
   }// end for x
 }
 
-void DrawCell(int row, int col)
+void drawCell(int row, int col)
 {
   u8g2.drawPixel(1+col,1+row);
+}
+
+void drawGameBoard(byte* gameBoard)
+{
+  // Game board is made up of bytesPerGameGrid bytes
+  int r=0;
+  int c=0;
+  bool bitSet = false;
+  for (int i=0; i < bytesPerGameGrid; i++)
+  {
+      byte b = gameBoard[i]; 
+      for (int j=0; j < 8; j++)
+      {
+        bitSet = getBitInByte(b,j);
+        if (bitSet)
+        {
+          drawCell(r,c);                    
+        }
+        c++;
+          if (c >= gameCols)
+          {
+            c = 0;
+            r++;
+          }        
+      }
+  }
 }
 
 void draw(void) {
   u8g2_prepare();
   u8g2.setDrawColor(1); // White
-  drawFrameFullScreen();
-  TestDraw();
+  drawFrameFullScreen();  
   //drawCheckerBoard();
-
+  testDraw();
+  
   tmElements_t tm;
-  if (RTC.read(tm)) {
+  if (RTC.read(tm)) {    
     drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToY2k(tm.Year));
   }
 }
+
+
+
+void testDraw()
+{
+  // We want to iterate over rows and colums 
+  // int r =0; r < gameRows
+  // int c =0; c < gameCols
+  randomiseGameBoard(gameBoard00);
+  drawGameBoard(gameBoard00);
+}
+
+/*** Bit storage utils: *********************************************/
 
 void PrintBytePadded(byte b)
 {
@@ -98,7 +144,7 @@ void setup(void) {
   u8g2.begin();  
 }
 
-void SetBitInByte(byte& b, int index, bool v)
+void setBitInByte(byte& b, int index, bool v)
 {
   // Index is counted from RIGHT (LSB)
   byte mask = 1 << (7-index);
@@ -114,28 +160,56 @@ void SetBitInByte(byte& b, int index, bool v)
   }
 }
 
-bool GetBitInByte(const byte& b, int index)
+bool getBitInByte(const byte& b, int index)
 {
     byte mask = 1 << (7-index);
     return (mask & b) > 0; 
 }
 
 
-void TestBitBang()
+void testBitBang()
 {
   Serial.println("Hello world");
 }
 
-void TestDraw()
+/** Game board managment Utils: ********************/
+
+void zeroGameBoard(byte* gameBoard)
 {
-  // We want to iterate over rows and colums 
-  // int r =0; r < gameRows
-  // int c =0; c < gameCols
-  DrawCell(0,0); // Top left col/row
-  DrawCell(gameRows-1,0); // Bottom left col/row
-  DrawCell(gameRows-1,gameCols-1); // Bottom right col/row
+  // Game board is made up of bytesPerGameGrid bytes
+  for (int i=0; i < bytesPerGameGrid; i++)
+  {
+   gameBoard[i] = 0; 
+  }
 }
 
+void randomiseGameBoard(byte* gameBoard)
+{
+  int density = 4; // n where 1/n of the cells are likely to be populated
+  for (int i=0; i < bytesPerGameGrid; i++)
+  {
+    byte randByte = 0;
+    for (int j=0; j < 8; j++)
+    {
+      setBitInByte(randByte,j,random(density)==0);
+    }
+    gameBoard[i] = randByte;
+  }
+  /*randomSeed(millis());
+  // Game board is made up of bytesPerGameGrid bytes
+  for (int i=0; i < bytesPerGameGrid; i++)
+  {
+    byte randByte = 0;
+    for (int i=0; i < 8; i++)
+    {
+      byte r = random(2);
+      setBitInByte(randByte,i,r);
+    }
+    gameBoard[i] = randByte;
+  }*/
+}
+
+/** Overall program logic: *************************/
 
 int count = 0;
 
@@ -155,6 +229,6 @@ void loop(void) {
   }
   if (count == 10)
   {     
-    TestBitBang();
+    testBitBang();
   }
 }
