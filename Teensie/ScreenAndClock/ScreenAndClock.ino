@@ -92,48 +92,59 @@ void setup(void) {
 
 void SetBitInByte(byte& b, int index, bool v)
 {
-  byte mask = 1;
-  mask = mask << index;
+  // Index is counted from RIGHT (LSB)
+  byte mask = 1 << index;
   if (v)
   {
     // Any bits already set, plus the single bit set in mask...
-    mask = mask | b;    
+    b = mask | b;    
   }
   else
   {
     // Any bits already set in b, and with all ones, except the one zero in mask
-    mask = b & ~mask;
+    b = b & ~mask;
   }
-  
-  PrintBytePadded(mask);
-  //b = mask;  
 }
+
+bool GetBitInByte(const byte& b, int index)
+{
+    byte mask = 1 << index;
+    return (mask & b) > 0; 
+}
+
 
 void TestBitBang()
 {
-  byte store = 0;
+  byte store = 16;
   Serial.println("Hello world");
   //PrintBytePadded(store);
 
-  byte mask = 0;
-  SetBitInByte(mask,0,true);
-  SetBitInByte(mask,1,true);
-  SetBitInByte(mask,2,true);
-  SetBitInByte(mask,3,true);
-  SetBitInByte(mask,4,true);
-  SetBitInByte(mask,5,true);
-  SetBitInByte(mask,6,true);
-  SetBitInByte(mask,7,true);
-  mask = 255;
+  SetBitInByte(store,0,true);
+  SetBitInByte(store,4,false);
+  PrintBytePadded(store);
+
+  Serial.println(GetBitInByte((byte)0,0));
+  Serial.println(GetBitInByte((byte)0,1));
+  Serial.println(GetBitInByte((byte)0,2));
+  Serial.println(GetBitInByte((byte)0,3));
+  Serial.println(GetBitInByte((byte)0,4));
+  Serial.println(GetBitInByte((byte)0,5));
+  Serial.println(GetBitInByte((byte)0,6));
+  Serial.println(GetBitInByte((byte)0,7));
+
+  Serial.println(GetBitInByte((byte)255,0));
+  Serial.println(GetBitInByte((byte)255,1));
+  Serial.println(GetBitInByte((byte)255,2));
+  Serial.println(GetBitInByte((byte)255,3));
+  Serial.println(GetBitInByte((byte)255,4));
+  Serial.println(GetBitInByte((byte)255,5));
+  Serial.println(GetBitInByte((byte)255,6));
+  Serial.println(GetBitInByte((byte)255,7));
   
-  SetBitInByte(mask,0,false);
-  SetBitInByte(mask,1,false);
-  SetBitInByte(mask,2,false);
-  SetBitInByte(mask,3,false);
-  SetBitInByte(mask,4,false);
-  SetBitInByte(mask,5,false);
-  SetBitInByte(mask,6,false);
-  SetBitInByte(mask,7,false);
+  
+  
+  
+  
 }
 
 
