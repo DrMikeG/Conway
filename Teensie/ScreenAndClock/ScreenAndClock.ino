@@ -93,7 +93,7 @@ void setup(void) {
 void SetBitInByte(byte& b, int index, bool v)
 {
   // Index is counted from RIGHT (LSB)
-  byte mask = 1 << index;
+  byte mask = 1 << (7-index);
   if (v)
   {
     // Any bits already set, plus the single bit set in mask...
@@ -108,7 +108,7 @@ void SetBitInByte(byte& b, int index, bool v)
 
 bool GetBitInByte(const byte& b, int index)
 {
-    byte mask = 1 << index;
+    byte mask = 1 << (7-index);
     return (mask & b) > 0; 
 }
 
@@ -117,29 +117,17 @@ void TestBitBang()
 {
   byte store = 16;
   Serial.println("Hello world");
-  //PrintBytePadded(store);
 
-  SetBitInByte(store,0,true);
-  SetBitInByte(store,4,false);
-  PrintBytePadded(store);
-
-  Serial.println(GetBitInByte((byte)0,0));
-  Serial.println(GetBitInByte((byte)0,1));
-  Serial.println(GetBitInByte((byte)0,2));
-  Serial.println(GetBitInByte((byte)0,3));
-  Serial.println(GetBitInByte((byte)0,4));
-  Serial.println(GetBitInByte((byte)0,5));
-  Serial.println(GetBitInByte((byte)0,6));
-  Serial.println(GetBitInByte((byte)0,7));
-
-  Serial.println(GetBitInByte((byte)255,0));
-  Serial.println(GetBitInByte((byte)255,1));
-  Serial.println(GetBitInByte((byte)255,2));
-  Serial.println(GetBitInByte((byte)255,3));
-  Serial.println(GetBitInByte((byte)255,4));
-  Serial.println(GetBitInByte((byte)255,5));
-  Serial.println(GetBitInByte((byte)255,6));
-  Serial.println(GetBitInByte((byte)255,7));
+  for (int i=0; i<8; i++)
+  {
+    byte test = 0;
+    SetBitInByte(test,i,true);
+    Serial.println(test,DEC);
+    for(int t=0; t < 8; t++){
+      Serial.print(GetBitInByte(test,t));
+    }
+    Serial.println();
+  }
   
   
   
