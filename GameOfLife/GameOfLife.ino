@@ -189,7 +189,7 @@ void draw(void) {
   u8g2.setDrawColor(1); // White
   drawFrameFullScreen();
   //drawCorners();
-  //drawCheckerBoard();
+  drawCheckerBoard();
   //populateGameBoard00With(true);
   //drawGameBoard(game_bits_00);
   // x y radius
