@@ -1,12 +1,10 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
-
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-#ifdef U8X8_HAVE_HW_I2C
 #include <Wire.h>
-#endif
+#include <TimeLib.h>
+#include <DS1307RTC.h>
+#include <SPI.h>
+
 
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 8);
 
@@ -70,7 +68,11 @@ void draw(void) {
   u8g2.setDrawColor(1); // White
   drawFrameFullScreen();
   //drawCheckerBoard();
-  drawDataTime(0,10,20,30,45);
+
+  tmElements_t tm;
+  if (RTC.read(tm)) {
+    drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToCalendar(tm.Year));
+  }
 }
 
 
