@@ -127,7 +127,7 @@ void testDraw()
 
 /*** Bit storage utils: *********************************************/
 
-void PrintBytePadded(byte b)
+void PrintBytePadded(const byte& b)
 {
   for (int i = 0; i < 8; i++)
   {
@@ -166,13 +166,92 @@ bool getBitInByte(const byte& b, int index)
     return (mask & b) > 0; 
 }
 
+void testPrintRCPair(int r, int c)
+{
+  Serial.print("[");
+  if (c<100)  
+    Serial.print("0");
+  if (c<10)  
+    Serial.print("0");
+  Serial.print(c);
+  Serial.print(",");
+  if (r<100)  
+    Serial.print("0");
+  if (r<10)  
+    Serial.print("0");
+  Serial.print(r);
+  Serial.print("]");
+}
+
+void testPrintRCPairs(int* rc, int* cs)
+{
+  testPrintRCPair(rc[0],cs[0]);
+  testPrintRCPair(rc[1],cs[1]);
+  testPrintRCPair(rc[2],cs[2]);
+  Serial.println();
+  testPrintRCPair(rc[3],cs[3]);
+  Serial.print("[   ,   ]");
+  testPrintRCPair(rc[4],cs[4]);
+  Serial.println();
+  /*    [CCC,RRR][CCC,RRR][CCC,RRR]
+   *    [CCC,RRR][   ,   ][CCC,RRR]
+   *    [CCC,RRR][CCC,RRR][CCC,RRR]
+   */    
+  testPrintRCPair(rc[5],cs[5]);
+  testPrintRCPair(rc[6],cs[6]);
+  testPrintRCPair(rc[7],cs[7]);
+  Serial.println();
+}
 
 void testBitBang()
 {
   Serial.println("Hello world");
+
+  // Test void generateNeighbouringCellLocations(const int r, const int c, int* rs, int* cs)
+  int rs[8];
+  int cs[8];
+  Serial.println("Test [1,1]:");
+  generateNeighbouringCellLocations(1,1,rs,cs);
+  testPrintRCPairs(rs,cs);
+
+  // Row 1, col 0
+  Serial.println("Test [1,0]:");
+  generateNeighbouringCellLocations(1,0,rs,cs);
+  testPrintRCPairs(rs,cs);
+
+  // Row 0, col 1
+  Serial.println("Test [0,1]:");
+  generateNeighbouringCellLocations(0,1,rs,cs);
+  testPrintRCPairs(rs,cs);
+
+  // Row 1, col 126
+  Serial.println("Test [1,125]:");
+  generateNeighbouringCellLocations(1,125,rs,cs);
+  testPrintRCPairs(rs,cs);
+
+  // Row 61, col 126
+  Serial.println("Test [61,125]:");
+  generateNeighbouringCellLocations(61,125,rs,cs);
+  testPrintRCPairs(rs,cs);
+
 }
 
 /** Game board managment Utils: ********************/
+
+const byte& getByteForRowCol(byte* gameBoard, int row, int col)
+{
+    // There are 16 bytes on each row...
+    int index = (row*16)+(col/8);
+    return gameBoard[index];
+}
+
+bool getBitForRowCol(byte* gameBoard, int row, int col)
+{
+  const byte& b = getByteForRowCol(gameBoard,row,col);
+  // Where about in this byte is the right bit?
+  int bitIndex = (col%8);
+  return getBitInByte(b,bitIndex);
+}
 
 void zeroGameBoard(byte* gameBoard)
 {
@@ -185,6 +264,7 @@ void zeroGameBoard(byte* gameBoard)
 
 void randomiseGameBoard(byte* gameBoard)
 {
+  randomSeed(millis());
   int density = 4; // n where 1/n of the cells are likely to be populated
   for (int i=0; i < bytesPerGameGrid; i++)
   {
@@ -194,19 +274,71 @@ void randomiseGameBoard(byte* gameBoard)
       setBitInByte(randByte,j,random(density)==0);
     }
     gameBoard[i] = randByte;
-  }
-  /*randomSeed(millis());
-  // Game board is made up of bytesPerGameGrid bytes
-  for (int i=0; i < bytesPerGameGrid; i++)
-  {
-    byte randByte = 0;
-    for (int i=0; i < 8; i++)
+  }  
+}
+
+void generateNeighbouringCellLocations(const int r, const int c, int* rs, int* cs)
+{
+  int i=0;
+   for (int y=-1; y<2; y++)
     {
-      byte r = random(2);
-      setBitInByte(randByte,i,r);
+  for (int x=-1; x < 2; x++)
+  {
+   
+        if (x==0 && y==0) // Skip Center
+          continue;  
+
+        // Standard values for non-center
+        int nC = c+x;
+        int nR = r+y;
+        // Check for left/right wrap...
+        if (nC == -1)
+        {
+          nC = gameCols-1; // Last valid value
+        }
+        else if (nC == gameCols) // Invalid value
+        {
+          nC = 0;
+        }
+        // Check for top/bottom wrap...
+        if (nR == -1)
+        {
+          nR = gameRows-1; // Last valid value
+        }
+        else if (nR == gameRows) // Invalid value
+        {
+          nR = 0;
+        }
+        // Record pair;
+        cs[i]=nC;
+        rs[i]=nR;
+        i++;
     }
-    gameBoard[i] = randByte;
-  }*/
+  }
+}
+
+int countNeighbouringCells(byte* gameBoard, int r, int c)
+{
+  // Using toriodal method
+  // Using diagonal neighbours
+  int count = 0;
+
+  int neighbourRs[8];
+  int neighbourCs[8];
+  generateNeighbouringCellLocations(r,c,neighbourRs,neighbourCs);  
+  for (int n=0; n < 8; n++)
+  {
+    bool isSet = getBitForRowCol(gameBoard,neighbourRs[n],neighbourCs[n]);
+    if (isSet)
+      count++;
+  }
+  
+  return count;
+}
+
+int calculateNextGeneration(byte* gameBoardIn, byte* gameBoardOut)
+{
+  return -1;
 }
 
 /** Overall program logic: *************************/
