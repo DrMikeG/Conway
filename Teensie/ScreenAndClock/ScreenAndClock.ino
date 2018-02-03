@@ -12,9 +12,10 @@ const int gameRows = 62; // Indexed from 0
 // 126 pixels per row = 16 bytes (16 * 8 = 128 bits)
 // 62 rows *  16 bytes = 992 bytes per game grid...
 const int bytesPerGameGrid = 16 * gameRows; 
+
+int boardToDraw = 0;
 byte gameBoard00[bytesPerGameGrid];
-
-
+byte gameBoard01[bytesPerGameGrid];
 
 /** Drawing functions: ******************************/
 
@@ -101,20 +102,33 @@ void drawGameBoard(byte* gameBoard)
   }
 }
 
+
+tmElements_t tm;
+
 void draw(void) {
   u8g2_prepare();
   u8g2.setDrawColor(1); // White
   drawFrameFullScreen();  
-  //drawCheckerBoard();
-  testDraw();
-  
-  tmElements_t tm;
+
+  drawCurrentGameBoard();
+
   if (RTC.read(tm)) {    
     drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToY2k(tm.Year));
   }
 }
 
-
+void drawCurrentGameBoard()
+{
+  if (boardToDraw == 0)
+  {
+   drawGameBoard(gameBoard00);
+  }
+  else if (boardToDraw == 1)
+  {
+   drawGameBoard(gameBoard01);
+  }
+    
+}
 
 void testDraw()
 {
@@ -139,10 +153,7 @@ void PrintBytePadded(const byte& b)
   Serial.println(b,BIN);
 }
 
-void setup(void) {
-  Serial.begin(9600); 
-  u8g2.begin();  
-}
+
 
 void setBitInByte(byte& b, int index, bool v)
 {
@@ -207,33 +218,6 @@ void testBitBang()
 {
   Serial.println("Hello world");
 
-  // Test void generateNeighbouringCellLocations(const int r, const int c, int* rs, int* cs)
-  int rs[8];
-  int cs[8];
-  Serial.println("Test [1,1]:");
-  generateNeighbouringCellLocations(1,1,rs,cs);
-  testPrintRCPairs(rs,cs);
-
-  // Row 1, col 0
-  Serial.println("Test [1,0]:");
-  generateNeighbouringCellLocations(1,0,rs,cs);
-  testPrintRCPairs(rs,cs);
-
-  // Row 0, col 1
-  Serial.println("Test [0,1]:");
-  generateNeighbouringCellLocations(0,1,rs,cs);
-  testPrintRCPairs(rs,cs);
-
-  // Row 1, col 126
-  Serial.println("Test [1,125]:");
-  generateNeighbouringCellLocations(1,125,rs,cs);
-  testPrintRCPairs(rs,cs);
-
-  // Row 61, col 126
-  Serial.println("Test [61,125]:");
-  generateNeighbouringCellLocations(61,125,rs,cs);
-  testPrintRCPairs(rs,cs);
-
 }
 
 /** Game board managment Utils: ********************/
@@ -245,12 +229,27 @@ const byte& getByteForRowCol(byte* gameBoard, int row, int col)
     return gameBoard[index];
 }
 
+void setByteForRowCol(byte* gameBoard, int row, int col, byte b)
+{
+    // There are 16 bytes on each row...
+    int index = (row*16)+(col/8);
+    gameBoard[index] = b;
+}
+
 bool getBitForRowCol(byte* gameBoard, int row, int col)
 {
   const byte& b = getByteForRowCol(gameBoard,row,col);
   // Where about in this byte is the right bit?
   int bitIndex = (col%8);
   return getBitInByte(b,bitIndex);
+}
+
+void setBitForRowCol(byte* gameBoard, int row, int col, bool val)
+{
+  byte b = getByteForRowCol(gameBoard,row,col);
+  int index = (col % 8);
+  setBitInByte(b, index, val);
+  setByteForRowCol(gameBoard,row,col,b);
 }
 
 void zeroGameBoard(byte* gameBoard)
@@ -336,12 +335,80 @@ int countNeighbouringCells(byte* gameBoard, int r, int c)
   return count;
 }
 
-int calculateNextGeneration(byte* gameBoardIn, byte* gameBoardOut)
+void calculateNextGeneration(byte* gameBoardIn, byte* gameBoardOut)
 {
-  return -1;
+  for (byte c=0; c < gameCols; c++)
+  {
+    for (int r=0; r < gameRows; r++)
+    {
+      bool outIsAlive = false;
+      
+      bool inIsAlive = getBitForRowCol(gameBoardIn,r,c);
+      int inNeighbourCount = countNeighbouringCells(gameBoardIn,r,c);
+      
+      if ( inIsAlive )
+      {
+        switch (inNeighbourCount)
+        {
+          case 0:   
+          case 1:
+            outIsAlive = false; // Lonely :-(
+            break;
+          case 2:
+          case 3:
+            outIsAlive = true; // Content :-)
+          break;
+          case 4:
+          case 5:
+          case 6:
+          case 7:
+          case 8:
+          outIsAlive = false; // Overcrowded :-(
+            break;
+        };
+      }
+      else
+      {
+         if ( inNeighbourCount == 3 ) // populate if 3 neighours around it
+            outIsAlive = true;
+      }
+
+      setBitForRowCol(gameBoardOut,r,c,outIsAlive);
+      
+    }// end for r
+  }//end of for c
 }
 
 /** Overall program logic: *************************/
+
+void setup(void) {
+  Serial.begin(9600); 
+  u8g2.begin();  
+  initNewGame();
+}
+
+void gameStep()
+{
+  // Caluate new board
+
+  if (boardToDraw == 0)
+  {
+    calculateNextGeneration(gameBoard00,gameBoard01);
+    boardToDraw = 1;
+  }
+  else if (boardToDraw == 1)
+  {
+    calculateNextGeneration(gameBoard01,gameBoard00);
+    boardToDraw = 0;
+  }
+}
+
+void initNewGame()
+{
+  randomiseGameBoard(gameBoard00);
+  boardToDraw = 0;
+}
+
 
 int count = 0;
 
@@ -349,6 +416,7 @@ void loop(void) {
   // picture loop  
   u8g2.clearBuffer();
   draw();
+  gameStep();
   u8g2.sendBuffer();
   
   // deley between each page
