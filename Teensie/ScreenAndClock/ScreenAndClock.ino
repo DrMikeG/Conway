@@ -7,6 +7,9 @@
 
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 8);
 
+const int gameCols = 126; // Indexed from 0
+const int gameRows = 62; // Indexed from 0
+
 void u8g2_prepare(void) {
   //u8g2.setFont(u8g2_font_6x10_tf);
   u8g2.setFont(u8g2_font_micro_tr);
@@ -60,11 +63,16 @@ void drawCheckerBoard()
   }// end for x
 }
 
+void DrawCell(int row, int col)
+{
+  u8g2.drawPixel(1+col,1+row);
+}
 
 void draw(void) {
   u8g2_prepare();
   u8g2.setDrawColor(1); // White
   drawFrameFullScreen();
+  TestDraw();
   //drawCheckerBoard();
 
   tmElements_t tm;
@@ -115,26 +123,18 @@ bool GetBitInByte(const byte& b, int index)
 
 void TestBitBang()
 {
-  byte store = 16;
   Serial.println("Hello world");
-
-  for (int i=0; i<8; i++)
-  {
-    byte test = 0;
-    SetBitInByte(test,i,true);
-    Serial.println(test,DEC);
-    for(int t=0; t < 8; t++){
-      Serial.print(GetBitInByte(test,t));
-    }
-    Serial.println();
-  }
-  
-  
-  
-  
-  
 }
 
+void TestDraw()
+{
+  // We want to iterate over rows and colums 
+  // int r =0; r < gameRows
+  // int c =0; c < gameCols
+  DrawCell(0,0); // Top left col/row
+  DrawCell(gameRows-1,0); // Bottom left col/row
+  DrawCell(gameRows-1,gameCols-1); // Bottom right col/row
+}
 
 
 int count = 0;
@@ -156,6 +156,5 @@ void loop(void) {
   if (count == 10)
   {     
     TestBitBang();
-    
   }
 }
