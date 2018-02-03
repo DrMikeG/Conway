@@ -146,6 +146,16 @@ void PrintBytePadded(const byte& b)
   Serial.println(b,BIN);
 }
 
+//Brian Kernighan
+byte countBitsInByte(byte b)
+{
+  byte count;
+  for (count = 0; b != 0; count++)
+  {
+    b &= b - 1; // this clears the LSB-most set bit
+  }
+  return count;
+}
 
 
 void setBitInByte(byte& b, int index, bool v)
@@ -177,6 +187,18 @@ void testBitBang()
 }
 
 /** Game board managment Utils: ********************/
+
+long countBitsInGameGrid(byte* gameBoard)
+{
+  long count = 0;
+
+   // Game board is made up of bytesPerGameGrid bytes
+  for (int i=0; i < bytesPerGameGrid; i++)
+  {
+    count+= countBitsInByte(gameBoard[i]);
+  }
+  return count;
+}
 
 const byte& getByteForRowCol(byte* gameBoard, int row, int col)
 {
@@ -379,6 +401,38 @@ void setup(void) {
   initNewGame();
 }
 
+long staleMateCount0 = 0;
+long staleMateCount1 = 0;
+int nGenBeforeDeclareStaleMate = 50;
+int nCurrentGenWithNoDiff = 0;
+
+void checkForGameStaleMate()
+{
+  long current0 = countBitsInGameGrid(gameBoard00);
+  long current1 = countBitsInGameGrid(gameBoard01);
+  Serial.println(current0);
+  Serial.println(current1);
+  if (current0 == staleMateCount0 && current1 == staleMateCount1)
+  {
+    nCurrentGenWithNoDiff++;
+    Serial.print("Stalemate ");Serial.println(nCurrentGenWithNoDiff);
+    if (nCurrentGenWithNoDiff > nGenBeforeDeclareStaleMate)
+    {
+      Serial.println("Play again");
+      initNewGame();
+      staleMateCount0 = 0;
+      staleMateCount0 = 1;
+      nCurrentGenWithNoDiff = 0;
+    }
+  }
+  else
+  {
+    staleMateCount0 =current0;
+    staleMateCount1 =current1;
+    nCurrentGenWithNoDiff = 0;
+  }
+}
+
 void gameStep()
 {
   // Caluate new board
@@ -386,7 +440,7 @@ if (true)
 {
   if (boardToDraw == 0)
   {
-    calculateNextGeneration(gameBoard00,gameBoard01);
+    calculateNextGeneration(gameBoard00,gameBoard01);    
     boardToDraw = 1;
   }
   else if (boardToDraw == 1)
@@ -394,6 +448,8 @@ if (true)
     calculateNextGeneration(gameBoard01,gameBoard00);
     boardToDraw = 0;
   }
+
+  checkForGameStaleMate(); 
 } 
 }
 
@@ -410,20 +466,14 @@ int count = 0;
 void loop(void) {
   // picture loop  
   u8g2.clearBuffer();
+  // Game should always be initialised
   draw();
+  // Setup next step..
   gameStep();
   u8g2.sendBuffer();
   
   // deley between each page
-  delay(100);  
+  delay(50);  
 
-  // Delay 10 iterations to catch serial stream
-  if (count <= 10)
-  {
-    count++;    
-  }
-  if (count == 10)
-  {     
-    testBitBang();
-  }
+ 
 }
