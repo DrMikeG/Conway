@@ -5,9 +5,7 @@
 #include <DS1307RTC.h>
 #include <SPI.h>
 
-
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 8);
-
 
 void u8g2_prepare(void) {
   //u8g2.setFont(u8g2_font_6x10_tf);
@@ -71,7 +69,7 @@ void draw(void) {
 
   tmElements_t tm;
   if (RTC.read(tm)) {
-    drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToCalendar(tm.Year));
+    drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToY2k(tm.Year));
   }
 }
 
