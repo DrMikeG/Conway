@@ -73,12 +73,50 @@ void draw(void) {
   }
 }
 
+void PrintBytePadded(byte b)
+{
+  for (int i = 0; i < 8; i++)
+  {
+     if (b < pow(2, i))
+     {
+       Serial.print(B0);               
+     }
+  }
+  Serial.println(b,BIN);
+}
 
 void setup(void) {
   Serial.begin(9600); 
   u8g2.begin();  
-
 }
+
+void SetBitInByte(byte& b, int index, bool v)
+{
+  byte mask = 1;
+  mask = mask << index;
+  PrintBytePadded(mask);
+  b = mask;  
+}
+
+void TestBitBang()
+{
+  byte store = 0;
+  Serial.println("Hello world");
+  //PrintBytePadded(store);
+  byte mask = 0;
+  SetBitInByte(mask,0,true);
+  SetBitInByte(mask,1,true);
+  SetBitInByte(mask,2,true);
+  SetBitInByte(mask,3,true);
+  SetBitInByte(mask,4,true);
+  SetBitInByte(mask,5,true);
+  SetBitInByte(mask,6,true);
+  SetBitInByte(mask,7,true);
+}
+
+
+
+int count = 0;
 
 void loop(void) {
   // picture loop  
@@ -87,6 +125,16 @@ void loop(void) {
   u8g2.sendBuffer();
   
   // deley between each page
-  delay(100);
+  delay(100);  
 
+  // Delay 10 iterations to catch serial stream
+  if (count <= 10)
+  {
+    count++;    
+  }
+  if (count == 10)
+  {     
+    TestBitBang();
+    
+  }
 }
