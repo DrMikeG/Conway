@@ -94,8 +94,19 @@ void SetBitInByte(byte& b, int index, bool v)
 {
   byte mask = 1;
   mask = mask << index;
+  if (v)
+  {
+    // Any bits already set, plus the single bit set in mask...
+    mask = mask | b;    
+  }
+  else
+  {
+    // Any bits already set in b, and with all ones, except the one zero in mask
+    mask = b & ~mask;
+  }
+  
   PrintBytePadded(mask);
-  b = mask;  
+  //b = mask;  
 }
 
 void TestBitBang()
@@ -103,6 +114,7 @@ void TestBitBang()
   byte store = 0;
   Serial.println("Hello world");
   //PrintBytePadded(store);
+
   byte mask = 0;
   SetBitInByte(mask,0,true);
   SetBitInByte(mask,1,true);
@@ -112,6 +124,16 @@ void TestBitBang()
   SetBitInByte(mask,5,true);
   SetBitInByte(mask,6,true);
   SetBitInByte(mask,7,true);
+  mask = 255;
+  
+  SetBitInByte(mask,0,false);
+  SetBitInByte(mask,1,false);
+  SetBitInByte(mask,2,false);
+  SetBitInByte(mask,3,false);
+  SetBitInByte(mask,4,false);
+  SetBitInByte(mask,5,false);
+  SetBitInByte(mask,6,false);
+  SetBitInByte(mask,7,false);
 }
 
 

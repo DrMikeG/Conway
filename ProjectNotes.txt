@@ -28,3 +28,5 @@ Pin Description:
  CS->10; 
  DC->9; 
  RST->8;
+ 
+ b,gr,y,p,-
