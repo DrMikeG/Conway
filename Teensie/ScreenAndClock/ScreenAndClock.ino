@@ -17,6 +17,8 @@ int boardToDraw = 0;
 byte gameBoard00[bytesPerGameGrid];
 byte gameBoard01[bytesPerGameGrid];
 
+const int density = 8; // n where 1/n of the cells are likely to be populated
+
 /** Drawing functions: ******************************/
 
 void u8g2_prepare(void) {
@@ -79,27 +81,18 @@ void drawCell(int row, int col)
 void drawGameBoard(byte* gameBoard)
 {
   // Game board is made up of bytesPerGameGrid bytes
-  int r=0;
-  int c=0;
   bool bitSet = false;
-  for (int i=0; i < bytesPerGameGrid; i++)
-  {
-      byte b = gameBoard[i]; 
-      for (int j=0; j < 8; j++)
-      {
-        bitSet = getBitInByte(b,j);
-        if (bitSet)
+
+  for (int c=0; c < gameCols; c++){
+    for (int r=0; r < gameRows; r++)
+    {
+      bitSet = getBitForRowCol(gameBoard, r, c);
+      if (bitSet)
         {
           drawCell(r,c);                    
         }
-        c++;
-          if (c >= gameCols)
-          {
-            c = 0;
-            r++;
-          }        
-      }
-  }
+    }
+  } 
 }
 
 
@@ -177,43 +170,6 @@ bool getBitInByte(const byte& b, int index)
     return (mask & b) > 0; 
 }
 
-void testPrintRCPair(int r, int c)
-{
-  Serial.print("[");
-  if (c<100)  
-    Serial.print("0");
-  if (c<10)  
-    Serial.print("0");
-  Serial.print(c);
-  Serial.print(",");
-  if (r<100)  
-    Serial.print("0");
-  if (r<10)  
-    Serial.print("0");
-  Serial.print(r);
-  Serial.print("]");
-}
-
-void testPrintRCPairs(int* rc, int* cs)
-{
-  testPrintRCPair(rc[0],cs[0]);
-  testPrintRCPair(rc[1],cs[1]);
-  testPrintRCPair(rc[2],cs[2]);
-  Serial.println();
-  testPrintRCPair(rc[3],cs[3]);
-  Serial.print("[   ,   ]");
-  testPrintRCPair(rc[4],cs[4]);
-  Serial.println();
-  /*    [CCC,RRR][CCC,RRR][CCC,RRR]
-   *    [CCC,RRR][   ,   ][CCC,RRR]
-   *    [CCC,RRR][CCC,RRR][CCC,RRR]
-   */    
-  testPrintRCPair(rc[5],cs[5]);
-  testPrintRCPair(rc[6],cs[6]);
-  testPrintRCPair(rc[7],cs[7]);
-  Serial.println();
-}
-
 void testBitBang()
 {
   Serial.println("Hello world");
@@ -264,7 +220,7 @@ void zeroGameBoard(byte* gameBoard)
 void randomiseGameBoard(byte* gameBoard)
 {
   randomSeed(millis());
-  int density = 4; // n where 1/n of the cells are likely to be populated
+  
   for (int i=0; i < bytesPerGameGrid; i++)
   {
     byte randByte = 0;
@@ -275,6 +231,42 @@ void randomiseGameBoard(byte* gameBoard)
     gameBoard[i] = randByte;
   }  
 }
+
+void preSetGameBoard(byte* gameBoard, int setting)
+{
+  zeroGameBoard(gameBoard);
+  if (setting == 0)
+  {
+    // Seed with spinner 
+     setBitForRowCol(gameBoard, 10, 10, true);
+     setBitForRowCol(gameBoard, 10, 11, true);
+     setBitForRowCol(gameBoard, 10, 12, true);
+  }
+  else if (setting == 1)
+  {
+    // Seed with spinner 
+     setBitForRowCol(gameBoard, 10, 10, true);
+     setBitForRowCol(gameBoard, 11, 10, true);
+     setBitForRowCol(gameBoard, 12, 10, true);
+  }
+  else if (setting == 2)
+  {
+    // Seed with flyer
+     setBitForRowCol(gameBoard, 10, 13, true);
+     setBitForRowCol(gameBoard, 11, 11, true);
+     setBitForRowCol(gameBoard, 11, 13, true);
+     setBitForRowCol(gameBoard, 12, 12, true);
+     setBitForRowCol(gameBoard, 12, 13, true);
+  }
+  else if (setting == 3)
+  {
+    // Seed with flyer
+     setBitForRowCol(gameBoard, 10, 10, true);
+     setBitForRowCol(gameBoard, 11, 11, true);
+     setBitForRowCol(gameBoard, 12, 12, true);     
+  }
+}
+
 
 void generateNeighbouringCellLocations(const int r, const int c, int* rs, int* cs)
 {
@@ -390,7 +382,8 @@ void setup(void) {
 void gameStep()
 {
   // Caluate new board
-
+if (true)
+{
   if (boardToDraw == 0)
   {
     calculateNextGeneration(gameBoard00,gameBoard01);
@@ -401,11 +394,13 @@ void gameStep()
     calculateNextGeneration(gameBoard01,gameBoard00);
     boardToDraw = 0;
   }
+} 
 }
 
 void initNewGame()
 {
   randomiseGameBoard(gameBoard00);
+  //preSetGameBoard(gameBoard00,2);
   boardToDraw = 0;
 }
 
