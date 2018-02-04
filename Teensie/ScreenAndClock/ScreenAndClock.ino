@@ -287,6 +287,53 @@ void preSetGameBoard(byte* gameBoard, int setting)
      setBitForRowCol(gameBoard, 11, 11, true);
      setBitForRowCol(gameBoard, 12, 12, true);     
   }
+  else if (setting == 4)
+  {
+    // Seed with flyer
+     setBitForRowCol(gameBoard, 10, 10, true);
+     setBitForRowCol(gameBoard, 11, 11, true);
+     setBitForRowCol(gameBoard, 12, 12, true);     
+  }
+  else if (setting == 5)
+  {
+    // Seed with Glider Gun
+    setBitForRowCol(gameBoard, 11,15,true);
+    setBitForRowCol(gameBoard, 11,16,true);
+    setBitForRowCol(gameBoard, 12,15,true);
+    setBitForRowCol(gameBoard, 12,16,true);
+    setBitForRowCol(gameBoard, 21,15,true);
+    setBitForRowCol(gameBoard, 21,16,true);
+    setBitForRowCol(gameBoard, 21,17,true);
+    setBitForRowCol(gameBoard, 22,14,true);
+    setBitForRowCol(gameBoard, 22,18,true);
+    setBitForRowCol(gameBoard, 23,13,true);
+    setBitForRowCol(gameBoard, 23,19,true);
+    setBitForRowCol(gameBoard, 24,13,true);
+    setBitForRowCol(gameBoard, 24,19,true);
+    setBitForRowCol(gameBoard, 25,16,true);
+    setBitForRowCol(gameBoard, 26,14,true);
+    setBitForRowCol(gameBoard, 26,18,true);
+    setBitForRowCol(gameBoard, 27,15,true);
+    setBitForRowCol(gameBoard, 27,16,true);
+    setBitForRowCol(gameBoard, 27,17,true);
+    setBitForRowCol(gameBoard, 28,16,true);
+    setBitForRowCol(gameBoard, 31,13,true);
+    setBitForRowCol(gameBoard, 31,14,true);
+    setBitForRowCol(gameBoard, 31,15,true);
+    setBitForRowCol(gameBoard, 32,13,true);
+    setBitForRowCol(gameBoard, 32,14,true);
+    setBitForRowCol(gameBoard, 32,15,true);
+    setBitForRowCol(gameBoard, 33,12,true);
+    setBitForRowCol(gameBoard, 33,16,true);
+    setBitForRowCol(gameBoard, 35,11,true);
+    setBitForRowCol(gameBoard, 35,12,true);
+    setBitForRowCol(gameBoard, 35,16,true);
+    setBitForRowCol(gameBoard, 35,17,true);
+    setBitForRowCol(gameBoard, 45,13,true);
+    setBitForRowCol(gameBoard, 45,14,true);
+    setBitForRowCol(gameBoard, 46,13,true);
+    setBitForRowCol(gameBoard, 46,14,true);
+  }
 }
 
 
@@ -456,7 +503,7 @@ if (true)
 void initNewGame()
 {
   randomiseGameBoard(gameBoard00);
-  //preSetGameBoard(gameBoard00,2);
+  //preSetGameBoard(gameBoard00,5);
   boardToDraw = 0;
 }
 
@@ -473,7 +520,7 @@ void loop(void) {
   u8g2.sendBuffer();
   
   // deley between each page
-  delay(50);  
+  //delay(10);  
 
  
 }
