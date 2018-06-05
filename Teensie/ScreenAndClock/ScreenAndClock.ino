@@ -106,6 +106,11 @@ void draw(void) {
   drawCurrentGameBoard();
 
   if (RTC.read(tm)) {    
+
+    boolean after25March = (tm.Month > 3 || (tm.Month == 3 && tm.Day > 25));
+    boolean before25Oct = (tm.Month < 10 || (tm.Month == 10 && tm.Day < 25));
+    if ( after25March && before25Oct)
+      tm.Hour+=1;
     drawDataTime(tm.Hour,tm.Minute,tm.Day,tm.Month,tmYearToY2k(tm.Year));
   }
 }

@@ -1,0 +1,32 @@
+In the UK the clocks go forward 1 hour at 1am on the last Sunday in March, and back 1 hour at 2am on the last Sunday in October. The period when the clocks are 1 hour ahead is called British Summer Time (BST). There's more daylight in the evenings and less in the mornings (sometimes called Daylight Saving Time).
+
+
+http://www.instructables.com/id/The-Arduino-and-Daylight-Saving-Time-Europe/
+
+
+Unless you live in the EU (or Nunavut). In the EU the switch isn’t made at the first, second, third or fourth Sunday in March resp. October, but at the LAST Sunday of the month.
+
+Well, a month has four Sundays right? Wrong. If for instance October starts on a Friday, Saturday or Sunday, it has 5 Sundays. So what to do? Well you could of course determine if the first day starts on Friday, Saturday or Sunday and if so, count to 5 and otherwise count to 4. But there is a simpler way, in which you don’t even have to count.
+
+Lets put that in a program for Western Europe, which means that the switch times are 2 and 3 am (that is 1:00 UTC)
+
+Let's agree that you have an RTC that will keep the "day of week" (as the DS1307 and the DS3231 do). As you set these yourself lets agree that you have set the day of week such that Monday is day 1 and Sunday is day 7. Some people like to start the week on Sunday, but that is just a matter of taste. Anyway, we have the following variables read from our RTC
+
+dow= day of week (as in 1-7)
+
+mo=month
+
+d=day (as in 1-31)
+
+h=hour
+
+DST is a flag we set when DST starts and that we clear at the end of DST to avoid that the program starts correcting the time for a full hour and even getting in an endless loop when we set the clock back.
+
+As October has 31 days, we know that the last Sunday will always fall from the 25th to the 31st. Therefore our check at the end of daylight saving will be as follows:
+
+If the date is after 25st March and before 25st October +1hr
+
+boolean after25March = (tm.Month > 3 || (tm.Month == 3 && tm.Day > 25);
+boolean before25Oct = (tm.Month < 10 || (tm.Month == 10 && tm.Day < 25);
+if ( after25March && before25Oct)
+  tm.Hour+=1;

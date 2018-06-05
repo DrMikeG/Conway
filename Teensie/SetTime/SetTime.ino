@@ -50,7 +50,7 @@ bool getTime(const char *str)
   int Hour, Min, Sec;
 
   if (sscanf(str, "%d:%d:%d", &Hour, &Min, &Sec) != 3) return false;
-  tm.Hour = Hour;
+  tm.Hour = Hour - 1; // 5th June is British Summer Time. Use code that adds one hour!
   tm.Minute = Min;
   tm.Second = Sec;
   return true;
