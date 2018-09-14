@@ -17,6 +17,11 @@ int boardToDraw = 0;
 byte gameBoard00[bytesPerGameGrid];
 byte gameBoard01[bytesPerGameGrid];
 
+int nextFiFoSpace = 0;
+int ageFifo[10];
+byte encodingsFIFO[1000 * 10];
+int gameStepsSinceNewRLE = 0;
+
 const int density = 8; // n where 1/n of the cells are likely to be populated
 
 /** Drawing functions: ******************************/
@@ -445,12 +450,195 @@ void calculateNextGeneration(byte* gameBoardIn, byte* gameBoardOut)
   }//end of for c
 }
 
+/** Run Length encoding: *************************/
+
+void initEncodingFIFO()
+{
+ //int nextFiFoSpace = 0;
+  //int ageFifo[0];
+  for (int i=0; i < 10; i++)
+  {
+    ageFifo[i] = 0;
+  }
+  nextFiFoSpace = 0;
+  for (long l =0; l < 10000; l++)
+  {
+     encodingsFIFO[l] = 0;
+  }
+  gameStepsSinceNewRLE = 0;
+}
+
+void runLengthEncodeAndTestIfNew(byte* gameBoard)
+{
+  
+  // Start at zero
+  // How long is the run before we change from zero to 1?
+
+  byte runs[1000];
+  int runIndex = 0;
+  byte currentZeroRunLength = 0;
+  bool bitSet = false;
+
+  for (int r=0; r < 1000; r++)
+  runs[r] = 0;
+  
+  for (int c=0; c < gameCols; c++){
+    for (int r=0; r < gameRows; r++)
+    {
+      // Run ends when we hit a one...
+      bitSet = getBitForRowCol(gameBoard, r, c);
+      if (bitSet || currentZeroRunLength == 254 )
+      {
+        // end of current run
+        if (runIndex > 999)
+        {
+          Serial.print("Too many runs!");
+          Serial.println(runIndex);
+        }
+        else
+        {
+          runs[runIndex] = currentZeroRunLength;
+        }
+        // reset run length
+        currentZeroRunLength = 0;
+        // prepare to store next run length
+        runIndex++;        
+      }
+      else
+      {
+        currentZeroRunLength++;
+      }
+    }
+  } 
+
+
+  // Given this encoding, does it match any encoding in the FIFO?
+  // Check all 10 FIFO entries - does this match any?
+  int indexInFIFO = IsRLEInFIFO(runs);
+  if (indexInFIFO == -1)
+  {
+    //Serial.println("RLE does not match any stored");
+    gameStepsSinceNewRLE = 0;
+    // 'new' entry
+    if (nextFiFoSpace < 9)
+    {
+      writeRLEToFifo(runs,nextFiFoSpace);
+      incrementAllOtherFIFOAges(nextFiFoSpace);      
+      nextFiFoSpace++;
+    }
+    else
+    {
+      // Replace oldest in FIFO
+      int replaceIndex = whichIsOldestFIFOEntry();
+      writeRLEToFifo(runs,replaceIndex);
+      incrementAllOtherFIFOAges(replaceIndex);
+    }    
+  }
+  else
+  {
+    // The RLE is already in the array, set age to zero and increment all other ages...
+    incrementAllOtherFIFOAges(indexInFIFO);
+    gameStepsSinceNewRLE++;
+  }
+  /*
+  
+  //Serial.print("Run length encoding length:");
+  //Serial.println(runIndex);
+  for (int r=0; r < runIndex; r++)
+  {
+    Serial.print(runs[r]);
+    Serial.print(',');
+  }
+  Serial.println();
+  */  
+}
+void incrementAllOtherFIFOAges(int latestIndex)
+{
+  //Serial.print("Ages:[");
+  for (int i=0; i < 10; i++)
+  {
+     ageFifo[i]++;
+     if (i == latestIndex)
+      ageFifo[i] = 0; // Most recent
+      //Serial.print(ageFifo[i]);
+      //Serial.print(',');
+  }
+  //Serial.println("]");
+}
+
+int whichIsOldestFIFOEntry()
+{
+  int index = 0;
+  int maxAge = ageFifo[0];
+  
+  for (int i=1; i < 10; i++)
+  {
+    if (ageFifo[i] > maxAge)
+    {
+      index = i;
+      maxAge = ageFifo[i];
+    }
+  }
+  
+  return index;
+}
+
+void writeRLEToFifo(byte* runArrayPtr, int fifoRow)
+{
+    //Serial.print("Writing RLE to row ");
+    //Serial.println(fifoRow);
+    int startIndex = (fifoRow * 1000);
+    for (int i=0; i < 1000; i++)
+    {
+      encodingsFIFO[startIndex+i] = runArrayPtr[i];
+    }
+}
+
+
+bool compareFifo(byte* runArrayPtr, int fifoRow)
+{
+    int startIndex = (fifoRow * 1000);
+    bool exactMatch = true;
+    for (int i=0; i < 1000; i++)
+    {
+      /*if (i < 10)
+      {
+        Serial.print(runArrayPtr[i]);
+        Serial.print(" = ");
+        Serial.println(encodingsFIFO[startIndex+i]);
+      }*/
+        if ( runArrayPtr[i] != encodingsFIFO[startIndex+i] )
+        {
+          //Serial.println(i);
+          //Serial.print(runArrayPtr[i]);
+          //Serial.print(" = ");
+          //Serial.println(encodingsFIFO[startIndex+i]);
+          exactMatch = false;
+          break;
+        }
+        
+    }
+    return exactMatch;
+}
+
+int IsRLEInFIFO(byte* runArrayPtr)
+{
+  for (int i=0; i < 10; i++)
+  {
+    if (compareFifo(runArrayPtr,i))
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
 /** Overall program logic: *************************/
 
 void setup(void) {
   Serial.begin(9600); 
   u8g2.begin();  
-  initNewGame();
+  initNewGame();  
 }
 
 long staleMateCount0 = 0;
@@ -460,29 +648,22 @@ int nCurrentGenWithNoDiff = 0;
 
 void checkForGameStaleMate()
 {
-  long current0 = countBitsInGameGrid(gameBoard00);
-  long current1 = countBitsInGameGrid(gameBoard01);
-  Serial.println(current0);
-  Serial.println(current1);
-  if (current0 == staleMateCount0 && current1 == staleMateCount1)
+  if (boardToDraw == 0)
   {
-    nCurrentGenWithNoDiff++;
-    Serial.print("Stalemate ");Serial.println(nCurrentGenWithNoDiff);
-    if (nCurrentGenWithNoDiff > nGenBeforeDeclareStaleMate)
-    {
-      Serial.println("Play again");
-      initNewGame();
-      staleMateCount0 = 0;
-      staleMateCount0 = 1;
-      nCurrentGenWithNoDiff = 0;
-    }
+    runLengthEncodeAndTestIfNew(gameBoard00);     
   }
   else
   {
-    staleMateCount0 =current0;
-    staleMateCount1 =current1;
-    nCurrentGenWithNoDiff = 0;
+    runLengthEncodeAndTestIfNew(gameBoard01);     
   }
+
+  if (gameStepsSinceNewRLE > 50)
+  {
+    Serial.println("Play again");
+    initNewGame();
+  }
+   
+  
 }
 
 void gameStep()
@@ -492,7 +673,7 @@ if (true)
 {
   if (boardToDraw == 0)
   {
-    calculateNextGeneration(gameBoard00,gameBoard01);    
+    calculateNextGeneration(gameBoard00,gameBoard01);
     boardToDraw = 1;
   }
   else if (boardToDraw == 1)
@@ -500,20 +681,19 @@ if (true)
     calculateNextGeneration(gameBoard01,gameBoard00);
     boardToDraw = 0;
   }
-
   checkForGameStaleMate(); 
 } 
 }
 
 void initNewGame()
 {
+  initEncodingFIFO();
+  
   randomiseGameBoard(gameBoard00);
   //preSetGameBoard(gameBoard00,5);
   boardToDraw = 0;
 }
 
-
-int count = 0;
 
 void loop(void) {
   // picture loop  

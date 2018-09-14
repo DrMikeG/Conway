@@ -1,0 +1,40 @@
+
+
+// 126 pixels per row = 16 bytes (16 * 8 = 128 bits)
+// 62 rows *  16 bytes = 992 bytes per game grid...
+byte gameBoard00[992];
+
+What are the spaces between the 1 bits?
+Need to cross from byte to byte, considering it as one long bit array.
+We don't need to represent 1, if we represent 0.
+
+The end of a 'run' is a change from a to b and back to a.
+Normally this will be 0 to 1 to 0
+e.g 5 = 000001
+e.g 1 = 01
+the next bit is a 0 and the start of another run, unless the run length is 0
+e.g 0 = 1 (not zeros then a one)
+
+Fixed length encoding (2 bit)
+00 - this is a 0 length run (repeat a 1)
+01 - this is a 1 length run (01)
+10 - this is a 4 length run (00001)
+11 - this is a 16 length run (0000 0000 0000 0000 1)
+
+
+while true, return number of zeros before next 1 or end. (Ensure length and trim final one if 1 too long) 
+Or should the last run be implied? (make up with zeros if shorter than exact length)
+
+Not a good approach - Iterating over input byte by byte
+
+var currentRunLength = 0;
+var byteIndex = 0;
+var cursor = 0;
+If I recall correctly, binary & returns all bits that are 1 in both numbers
+process bits in next byte following cursor...
+if byte = 1000 0000 (128) end current run
+else if byte = 0000 0000 (0) +8
+else if byte & 1 (0000 0001) = +7
+else if byte & 2 (0000 001.) = +6 (use binary and logic to capture 0000 0010 and 0000 0011)
+
+Iterating over input bit by bit
